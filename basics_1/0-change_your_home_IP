@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
-# Configure host resolution:
-# - localhost    -> 127.0.0.2
-# - facebook.com -> 8.8.8.8
-
 set -e
 
 HOSTS_FILE="/etc/hosts"
+TMP_FILE="$(mktemp)"
 
-# Remove existing entries for localhost and facebook.com (with or without www)
-sudo sed -i.bak '/[[:space:]]localhost$/d' "$HOSTS_FILE"
-sudo sed -i '/[[:space:]]facebook\.com$/d' "$HOSTS_FILE"
-sudo sed -i '/[[:space:]]www\.facebook\.com$/d' "$HOSTS_FILE"
+# Keep all lines except ones defining localhost/facebook.com/www.facebook.com
+awk '
+{
+  is_localhost=0; is_fb=0;
+  for (i=2; i<=NF; i++) {
+    if ($i=="localhost") is_localhost=1;
+    if ($i=="facebook.com" || $i=="www.facebook.com") is_fb=1;
+  }
+  if (!is_localhost && !is_fb) print $0;
+}
+' "$HOSTS_FILE" > "$TMP_FILE"
 
 # Add required mappings
-echo "127.0.0.2 localhost" | sudo tee -a "$HOSTS_FILE" > /dev/null
-echo "8.8.8.8 facebook.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
-echo "8.8.8.8 www.facebook.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
+{
+  echo "127.0.0.2 localhost"
+  echo "8.8.8.8 facebook.com"
+} >> "$TMP_FILE"
+
+# Overwrite without rename issues
+cat "$TMP_FILE" > "$HOSTS_FILE"
+rm -f "$TMP_FILE"
