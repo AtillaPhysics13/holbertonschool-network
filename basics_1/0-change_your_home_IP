@@ -1,3 +1,18 @@
 #!/usr/bin/env bash
-sed -i 's/^127\.0\.0\.1[[:space:]]\+localhost/127.0.0.2 localhost/' /etc/hosts
-echo "8.8.8.8 facebook.com" >> /etc/hosts
+# Configure host resolution:
+# - localhost    -> 127.0.0.2
+# - facebook.com -> 8.8.8.8
+
+set -e
+
+HOSTS_FILE="/etc/hosts"
+
+# Remove existing entries for localhost and facebook.com (with or without www)
+sudo sed -i.bak '/[[:space:]]localhost$/d' "$HOSTS_FILE"
+sudo sed -i '/[[:space:]]facebook\.com$/d' "$HOSTS_FILE"
+sudo sed -i '/[[:space:]]www\.facebook\.com$/d' "$HOSTS_FILE"
+
+# Add required mappings
+echo "127.0.0.2 localhost" | sudo tee -a "$HOSTS_FILE" > /dev/null
+echo "8.8.8.8 facebook.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
+echo "8.8.8.8 www.facebook.com" | sudo tee -a "$HOSTS_FILE" > /dev/null
